@@ -35,7 +35,6 @@ class URLGrid(wx.grid.Grid):
         sizer.Add(self, 1, wx.EXPAND)
         
         self.DefaultColumnLabelSize = 14
-        self.CreateGrid(0, len(self.get_cols()))
         self.SetRowLabelSize(0)
         for key, data in self.get_cols().items():
             self.SetColLabelValue(data[0], data[1])
