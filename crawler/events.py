@@ -3,6 +3,7 @@ import wx
 ID_NEW_URL = wx.NewId()
 ID_NEW_DATA = wx.NewId()
 ID_NEW_NOTE = wx.NewId()
+ID_START_CRAWL = wx.NewId()
 
 def send_event(notify, result):
     wx.PostEvent(notify, result)
@@ -32,8 +33,19 @@ class NewNoteEvent(wx.PyEvent):
     """
     Event for a new note!
     """
-    def __init(self, url, note):
+    def __init__(self, url, note):
         wx.PyEvent.__init__(self)
         self.SetEventType(ID_NEW_NOTE)
         self.url = url
         self.note = note
+
+
+class StartEvent(wx.PyEvent):
+    """
+    Event for starting the crawler
+    """
+    def __init__(self, start_url, num_fetchers=2):
+        wx.PyEvent.__init__(self)
+        self.SetEventType(ID_START_CRAWL)
+        self.start_url = start_url
+        self.fetchers = num_fetchers

@@ -1,3 +1,5 @@
+from collections import OrderedDict
+
 import wx
 import wx.grid
 
@@ -9,20 +11,20 @@ class URLGrid(wx.grid.Grid):
     """
     
     # (col number, label, width)
-    column_map = {
-        'url': (0, 'URL', 400),
-        'status': (1, 'Status Code', 150),
-        'server': (2, 'Server', 150),
-        'content_type': (3, 'Content Type', 200),
-        'size': (4, 'Size', 150),
-        'title': (5, 'Title', 250),
-        'desc': (6, 'Meta Description', 350),
-        'kw': (7, 'Meta Keywords', 350),
-        'canonical': (8, 'Rel Canonical', 300),
-        'h1': (9, 'H1', 300),
-        'h2': (10, 'H2', 300), 
-        'notes': (11, 'Notes', 300)
-    }
+    column_map = OrderedDict([
+        ('url', (0, 'URL', 400)),
+        ('status', (1, 'Status Code', 150)),
+        ('server', (2, 'Server', 150)),
+        ('content_type', (3, 'Content Type', 200)),
+        ('size', (4, 'Size', 150)),
+        ('title', (5, 'Title', 250)),
+        ('desc', (6, 'Meta Description', 350)),
+        ('kw', (7, 'Meta Keywords', 350)),
+        ('canonical', (8, 'Rel Canonical', 300)),
+        ('h1', (9, 'H1', 300)),
+        ('h2', (10, 'H2', 300)), 
+        ('notes', (11, 'Notes', 300))
+    ])
     
     def __init__(self, sizer, *args, **kwargs):
         wx.grid.Grid.__init__(self, *args, **kwargs)
@@ -35,7 +37,6 @@ class URLGrid(wx.grid.Grid):
         sizer.Add(self, 1, wx.EXPAND)
         
         self.DefaultColumnLabelSize = 14
-        self.CreateGrid(0, len(self.get_cols()))
         self.SetRowLabelSize(0)
         for key, data in self.get_cols().items():
             self.SetColLabelValue(data[0], data[1])
