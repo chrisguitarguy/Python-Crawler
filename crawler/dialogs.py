@@ -70,7 +70,6 @@ class CrawlDialog(wx.Dialog):
         if match is None:
             wx.MessageBox('Invalid URL', 'Error', wx.OK | wx.ICON_ERROR)
         else:
-            print repr(self.GetParent())
             send_event(self.GetParent(), StartEvent(url, self.num_fetcher))
             self.Destroy()
         
