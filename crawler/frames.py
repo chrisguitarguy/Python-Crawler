@@ -102,7 +102,7 @@ class Main(wx.Frame):
                     else:
                         f.write(dataset.csv)
             except Exception, e:
-                self.SetSatusText('An error occured: {}'.format(e))
+                self.SetStatusText('An error occured: {}'.format(e))
         else:
             self.SetStatusText('No saving?')
     
