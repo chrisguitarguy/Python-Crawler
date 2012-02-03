@@ -56,7 +56,7 @@ class Main(wx.Frame):
         self.Close(True)
     
     def menu_new(self, event):
-        dlg = CrawlDialog(None, title="Start a New Crawl", size=(400, 300))
+        dlg = CrawlDialog(self, title="Start a New Crawl", size=(400, 300))
         dlg.ShowModal()
         dlg.Destroy()
     
