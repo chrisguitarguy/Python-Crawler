@@ -38,7 +38,7 @@ class HelpMenu(wx.Menu):
         self.about = self.Append(wx.ID_ABOUT, '&About', 'About this program')
         self.bugs = self.Append(ID_BUGS, 'Report Bugs', 'Report bugs and glitches')
         self.docs = self.Append(ID_DOCS, 'Documentation', 'Online documentation')
-        self.updates = self.Append(ID_UPDATES, 'Updates', 'Check for available updates')
+        #self.updates = self.Append(ID_UPDATES, 'Updates', 'Check for available updates')
 
 
 class MainMenu(wx.MenuBar):

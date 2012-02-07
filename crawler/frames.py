@@ -2,6 +2,7 @@
 from collections import OrderedDict
 import os
 import re
+import webbrowser
 
 import tablib
 import wx
@@ -41,6 +42,9 @@ class Main(wx.Frame):
         self.Bind(wx.EVT_MENU, self.menu_new, self.menu.file_menu.new_crawl)
         self.Bind(wx.EVT_MENU, self.menu_save, self.menu.file_menu.export)
         self.Bind(wx.EVT_MENU, self.menu_stop, self.menu.file_menu.stop)
+        self.Bind(wx.EVT_MENU, self.menu_about, self.menu.help_menu.about)
+        self.Bind(wx.EVT_MENU, self.menu_bugs, self.menu.help_menu.bugs)
+        self.Bind(wx.EVT_MENU, self.menu_docs, self.menu.help_menu.docs)
         
         # Bind events from worker thread
         self.Connect(-1, -1, ID_NEW_URL, self.event_url)
@@ -106,6 +110,57 @@ class Main(wx.Frame):
         else:
             self.SetStatusText('No saving?')
     
+    def menu_about(self, event):
+        info = wx.AboutDialogInfo()
+        info.Name = 'PyCrawler'
+        info.Version = '0.0.1 Beta'
+        info.Copyright = '(c) 2012 Christopher Davis'
+        info.Description = ('A simple web crawler meant to fetch some '
+            'relevant SEO items from a given web page.')
+        #info.Website = ('http://www.christopherdavis.me/Python-Crawler', 
+        #                                                'Python Crawler')
+        info.Developers = [
+            'Christopher Davis - http://christopherdavis.me', 
+            'Requests - http://python-requests.org',
+            'lxml - http://lxml.de',
+            'wxPython - http://wxpython.org'
+        ]
+        info.License = """
+        ISC License
+        
+        Copyright (c) 2012, Christopher Davis <chris@classicalguitar.org>
+
+        Permission to use, copy, modify, and/or distribute this software for any
+        purpose with or without fee is hereby granted, provided that the above
+        copyright notice and this permission notice appear in all copies.
+
+        THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+        WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+        MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+        ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+        WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+        ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+        OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+        """
+        wx.AboutBox(info)
+    
+    def menu_bugs(self, event):
+        try:
+            webbrowser.open('https://github.com/chrisguitarguy/Python-Crawler/issues')
+        except webbrowser.Error:
+            self.SetStatusText('Please visit '
+                'https://github.com/chrisguitarguy/Python-Crawler/issues'
+                ' to report bugs')
+    
+    def menu_docs(self, event):
+        try:
+            webbrowser.open('https://github.com/chrisguitarguy/Python-Crawler/wiki')
+        except webbrowser.Error:
+            self.SetStatusText('Visit '
+                'https://github.com/chrisguitarguy/Python-Crawler/wiki'
+                ' for documentation')
+            
+        
     def event_url(self, event):
         self.urls[event.url] = self.counter
         self.grid.AppendRows(1)
