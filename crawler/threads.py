@@ -207,10 +207,4 @@ class Parser(Thread):
         if h2 is not None:
             out['h2'] = h2
         self.signal.put(('url_meta', (url, out)))
-
-if __name__ == '__main__':
-    urls = ['http://www.classicalguitar.org/about', 'http://www.classicalguitar.org']
-    d = Dispatcher(base='http://www.classicalguitar.org/')
-    d.signal_queue.put(('add_urls', urls))
-    d.start()
         
