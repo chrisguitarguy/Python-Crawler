@@ -45,6 +45,7 @@ class Main(wx.Frame):
         self.Bind(wx.EVT_MENU, self.menu_about, self.menu.help_menu.about)
         self.Bind(wx.EVT_MENU, self.menu_bugs, self.menu.help_menu.bugs)
         self.Bind(wx.EVT_MENU, self.menu_docs, self.menu.help_menu.docs)
+        self.Bind(wx.EVT_CLOSE, self.menu_exit)
         
         # Bind events from worker thread
         self.Connect(-1, -1, ID_NEW_URL, self.event_url)
@@ -57,7 +58,7 @@ class Main(wx.Frame):
         self.Show()
         
     def menu_exit(self, event):
-        self.Close(True)
+        self.Destroy()
     
     def menu_new(self, event):
         dlg = CrawlDialog(self, title="Start a New Crawl", size=(400, 300))
