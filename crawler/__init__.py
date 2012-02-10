@@ -1,1 +1,1 @@
-from frames import Main
+from .frames import Main

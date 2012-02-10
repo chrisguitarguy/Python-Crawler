@@ -3,13 +3,11 @@ from threading import Thread, Event
 from Queue import Empty, Queue
 
 import lxml.html as parser
-import requests
-import wx
 
-from queues import URLQueue
-from events import NewUrlEvent, NewURLDataEvent, NewNoteEvent, send_event
-
-HEADERS = {'User-Agent': 'PyCrawl 0.1'}
+from .functions import fetch_element_att, fetch_element_text, \
+    fetch_links, fetch_url, parse_content, parse_headers
+from .events import NewUrlEvent, NewURLDataEvent, NewNoteEvent, send_event
+from .queues import URLQueue
 
 class Dispatcher(Thread):
     """
@@ -71,7 +69,7 @@ class Dispatcher(Thread):
                     send_event(self.gui, NewUrlEvent(url))
         elif 'add_content' == action:
             self.content_queue.put(val)
-        elif 'fetch_error' == action:
+        elif 'send_note' == action:
             url, e = val
             send_event(self.gui, NewNoteEvent(url, e))
         elif 'url_meta' == action:
@@ -98,7 +96,6 @@ class Fetcher(Thread):
         self.urls = url_queue
         self.signal = signal_queue
         self.killer = killer
-        self.headers = HEADERS
     
     def run(self):
         while not self.killer.is_set():
@@ -107,7 +104,7 @@ class Fetcher(Thread):
             except Empty:
                 continue
             else:
-                self.fetch_url(url)
+                self.handle_url(url)
                 self.urls.task_done()
         
         while 1:
@@ -116,29 +113,22 @@ class Fetcher(Thread):
             except Empty:
                 break
             else:
-                self.fetch_url(url)
+                self.handle_url(url)
                 self.urls.task_done()
     
-    def fetch_url(self, url):
-        try:
-            resp = requests.get(url, headers=self.headers, 
-                                          allow_redirects=False)
-        except Exception, e:
-            self.signal.put(('fetch_error', (url, e)))
-        else:
-            out = {}
-            out['server'] = resp.headers.get('server', 'unknown')
-            content_type = resp.headers.get('content-type')
-            if content_type is not None:
-                out['content_type'] = content_type.split(';', 1)[0]
-            else:
-                out['content_type'] = 'unknown'
-            out['size'] = resp.headers.get('content-length', '-1')
-            out['status'] = resp.status_code
-            
-            self.signal.put(('url_meta', (url, out)))
-            if 'text/html' == out['content_type']:
-                self.signal.put(('add_content', (url, resp.content)))
+    def handle_url(self, url):
+        content, headers, status, notes = fetch_url(url)
+        if status is None:
+            self.signal.put(('send_note', (url, notes)))
+            return
+        if content is not None:
+            self.signal.put(('add_content', (url, content)))
+        if headers is not None:
+            meta = parse_headers(headers)
+            meta['status'] = status
+            self.signal.put(('url_meta', (url, meta)))
+        if notes is not None:
+            self.signal.put(('send_note', (url, notes)))
                     
 
 class Parser(Thread):
@@ -151,7 +141,6 @@ class Parser(Thread):
     
     def __init__(self, content_queue, signal_queue, base_url, killer):
         Thread.__init__(self)
-        
         self.content = content_queue
         self.signal = signal_queue
         self.url = base_url
@@ -177,78 +166,47 @@ class Parser(Thread):
                 self.content.task_done()
     
     def parse_content(self, url, to_parse):
-        try:
-            parsed = parser.document_fromstring(to_parse)
-        except Exception, e:
-            self.signal.put(('parsing_error', (url, e)))
-        else:
-            parsed.make_links_absolute(self.url)
-            
-            if not self.killer.is_set():
-                links = parsed.cssselect('a')
+        parsed = parse_content(to_parse)
+        if parsed is None:
+            self.signal.put(('send_note', (url, 'HTML parsing error')))
+            return
+        
+        if not self.killer.is_set():
+            links = fetch_links(parsed)
+            if links is not None:
                 out_links = set()
                 for l in links:
-                    href = l.get('href')
-                    if href is not None and href.startswith(self.url):
-                        out_links.add(href)
+                    if l.startswith(self.url):
+                        out_links.add(l)
                 self.signal.put(('add_urls', out_links))
-            
-            out = {}
-            
-            ## todo: maybe too much repeating myself here?
-            ## could `out` be an object of some sort with a 
-            ## set_value method to abstract away this len(x) crap?
-            title = parsed.cssselect('title')
-            if len(title) > 1:
-                out['title'] = ';'.join([t.text_content() for t in title])
-            elif len(title) == 1:
-                out['title'] = title[0].text_content()
-            else:
-                out['title'] = 'n/a'
-            
-            desc = parsed.cssselect('meta[name=description]')
-            if len(desc) > 1:
-                out['desc'] = ';'.join([d.get('content') for d in desc])
-            elif len(desc) == 1:
-                out['desc'] = desc[0].get('content')
-            else:
-                out['desc'] = 'n/a'
-            
-            kw = parsed.cssselect('meta[name=keywords]')
-            if len(kw) > 1:
-                out['kw'] = ';'.join([k.get('content') for k in kw])
-            elif len(kw) == 1:
-                out['kw'] = kw[0].get('content')
-            else:
-                out['kw'] = 'n/a'
-            
-            canonical = parsed.cssselect('link[rel=canonical]')
-            if len(canonical) > 1:
-                out['canonical'] = ';'.join([c.get('href') 
-                                            for c in canonical])
-            elif len(canonical) == 1:
-                out['canonical'] = canonical[0].get('href')
-            else:
-                out['canonical'] = 'n/a'
-                
-            h1 = parsed.cssselect('h1')
-            if len(h1) > 1:
-                out['h1'] = ';'.join([h.text_content().strip() 
-                                  for h in h1 if h is not None])
-            elif len(h1) == 1:
-                out['h1'] = h1[0].text_content().strip()
-            else:
-                out['h1'] = 'n/a'
-            
-            h2 = parsed.cssselect('h2')
-            if len(h2) > 1:
-                out['h2'] = ';'.join([h.text_content().strip() 
-                                  for h in h2 if h is not None])
-            elif len(h2) == 1:
-                out['h2'] = h2[0].text_content().strip()
-            else:
-                out['h2'] = 'n/a'
-            self.signal.put(('url_meta', (url, out)))
+        
+        out = {
+            'title': '--',
+            'desc': '--',
+            'kw': '--',
+            'canonical': '--',
+            'h1': '--',
+            'h2': '--'
+        }
+        title = fetch_element_text(parsed, 'title')
+        if title is not None:
+            out['title'] = title
+        desc = fetch_element_att(parsed, 'meta[name=description]', 'content')
+        if desc is not None:
+            out['desc'] = desc
+        kw = fetch_element_att(parsed, 'meta[name=keywords]', 'content')
+        if kw is not None:
+            out['kw'] = kw
+        canonical = fetch_element_att(parsed, 'link[rel=canonical]', 'href')
+        if canonical is not None:
+            out['canonical'] = canonical
+        h1 = fetch_element_text(parsed, 'h1')
+        if h1 is not None:
+            out['h1'] = h1
+        h2 = fetch_element_text(parsed, 'h2')
+        if h2 is not None:
+            out['h2'] = h2
+        self.signal.put(('url_meta', (url, out)))
 
 if __name__ == '__main__':
     urls = ['http://www.classicalguitar.org/about', 'http://www.classicalguitar.org']

@@ -8,12 +8,12 @@ import tablib
 import wx
 import wx.grid
 
-from dialogs import CrawlDialog
-from events import ID_NEW_URL, ID_NEW_DATA, ID_NEW_NOTE, ID_START_CRAWL
-from grids import URLGrid
-from menus import MainMenu
-from models import URL, URLData, base
-from threads import Dispatcher
+from .dialogs import CrawlDialog
+from .events import ID_NEW_URL, ID_NEW_DATA, ID_NEW_NOTE, ID_START_CRAWL
+from .grids import URLGrid
+from .menus import MainMenu
+from .models import URL, URLData, base
+from .threads import Dispatcher
 
 
 class Main(wx.Frame):

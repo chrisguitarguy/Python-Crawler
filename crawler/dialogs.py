@@ -3,7 +3,7 @@ import re
 
 import wx
 
-from events import send_event, StartEvent
+from .events import send_event, StartEvent
 
 class CheckSingleDialog(wx.Dialog):
     pass # todo
