@@ -1,6 +1,5 @@
 from collections import OrderedDict
 
-import wx
 import wx.grid
 
 class URLGrid(wx.grid.Grid):

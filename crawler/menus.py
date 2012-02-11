@@ -5,6 +5,7 @@ ID_BUGS = wx.NewId()
 ID_LIST = wx.NewId()
 ID_DOCS = wx.NewId()
 ID_UPDATES = wx.NewId()
+ID_STOP_ABRUPT = wx.NewId()
 
 class FileMenu(wx.Menu):
     def __init__(self):
@@ -25,9 +26,11 @@ class FileMenu(wx.Menu):
         
         self.AppendSeparator()
         
-        self.stop = self.Append(wx.ID_CANCEL, 'Stop Crawl', 
-                                               'Stop the current crawl')
-        
+        self.stop = self.Append(wx.ID_CANCEL, 'Stop Crawl (graceful)', 
+            'Stop the current crawl, but finish up all the URLs in the queue.')
+        self.stop_abrupt = self.Append(ID_STOP_ABRUPT, 'Stop Crawl (abrubt)',
+            "Stop the current crawl abruptly -- don't finish the URLs in the queue")
+        self.AppendSeparator()
         self.exit = self.Append(wx.ID_EXIT, 'E&xit', 'Quit this program')
 
 

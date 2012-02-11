@@ -6,7 +6,6 @@ import webbrowser
 
 import tablib
 import wx
-import wx.grid
 
 from .dialogs import CrawlDialog
 from .events import ID_NEW_URL, ID_NEW_DATA, ID_NEW_NOTE, ID_START_CRAWL
@@ -22,12 +21,13 @@ class Main(wx.Frame):
     """
     
     def __init__(self, parent=None, title='Python Crawler'):
-        wx.Frame.__init__(self, parent=parent, title=title)
+        wx.Frame.__init__(self, parent=parent, title=title, size=(700,500))
         sizer = wx.BoxSizer(wx.VERTICAL)
         self.panel = wx.Panel(self, wx.ID_ANY)
         self.panel.SetSizer(sizer)
         self.urls = OrderedDict()
         self.counter = 0;
+        self.crawling = False
         self.CreateStatusBar()
         
         # set up menus
@@ -42,6 +42,7 @@ class Main(wx.Frame):
         self.Bind(wx.EVT_MENU, self.menu_new, self.menu.file_menu.new_crawl)
         self.Bind(wx.EVT_MENU, self.menu_save, self.menu.file_menu.export)
         self.Bind(wx.EVT_MENU, self.menu_stop, self.menu.file_menu.stop)
+        self.Bind(wx.EVT_MENU, self.menu_stop_abrupt, self.menu.file_menu.stop_abrupt)
         self.Bind(wx.EVT_MENU, self.menu_about, self.menu.help_menu.about)
         self.Bind(wx.EVT_MENU, self.menu_bugs, self.menu.help_menu.bugs)
         self.Bind(wx.EVT_MENU, self.menu_docs, self.menu.help_menu.docs)
@@ -58,17 +59,29 @@ class Main(wx.Frame):
         self.Show()
         
     def menu_exit(self, event):
+        if self.crawling:
+            self.stop_dispatcher()
         self.Destroy()
     
     def menu_new(self, event):
+        if self.crawling:
+            wx.MessageBox('Already crawling', 'Error', wx.OK | wx.ICON_ERROR)
+            return
         dlg = CrawlDialog(self, title="Start a New Crawl", size=(400, 300))
         dlg.ShowModal()
         dlg.Destroy()
     
     def menu_stop(self, event):
-        if self.dispatcher is not None:
-            self.dispatcher.signal_queue.put(('stop', True))
+        if self.crawling:
+            self.dispatcher.signal_queue.put(('stop', None))
             self.SetStatusText('Stopping crawl, no new URLs will be added')
+        else:
+            self.SetStatusText('Start a crawl first.')
+    
+    def menu_stop_abrupt(self, event):
+        if self.crawling:
+            self.stop_dispatcher()
+            self.SetStatusText('Crawl stopped.')
         else:
             self.SetStatusText('Start a crawl first.')
     
@@ -160,8 +173,7 @@ class Main(wx.Frame):
             self.SetStatusText('Visit '
                 'https://github.com/chrisguitarguy/Python-Crawler/wiki'
                 ' for documentation')
-            
-        
+    
     def event_url(self, event):
         self.urls[event.url] = self.counter
         self.grid.AppendRows(1)
@@ -190,8 +202,19 @@ class Main(wx.Frame):
         self.grid.SetCellValue(row, col[0], event.note)
     
     def event_start(self, event):
+        self.crawling = True
         self.dispatcher = Dispatcher(gui=self, 
                            fetchers=event.fetchers, base=event.start_url)
         self.dispatcher.signal_queue.put(('add_urls', [event.start_url]))
         self.dispatcher.start()
         self.SetStatusText('Crawling...')
+    
+    def stop_dispatcher(self):
+        if not self.crawling:
+            return
+        self.SetStatusText('Stopping threads. '
+                                         'This may take a few seconds.')
+        self.dispatcher.signal_queue.put(('stop_now', None))
+        while self.dispatcher.is_alive():
+            self.dispatcher.join()
+        self.crawling = False
