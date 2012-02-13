@@ -28,7 +28,7 @@ class FileMenu(wx.Menu):
         
         self.stop = self.Append(wx.ID_CANCEL, 'Stop Crawl (graceful)', 
             'Stop the current crawl, but finish up all the URLs in the queue.')
-        self.stop_abrupt = self.Append(ID_STOP_ABRUPT, 'Stop Crawl (abrubt)',
+        self.stop_abrupt = self.Append(ID_STOP_ABRUPT, 'Stop Crawl (abrupt)',
             "Stop the current crawl abruptly -- don't finish the URLs in the queue")
         self.AppendSeparator()
         self.exit = self.Append(wx.ID_EXIT, 'E&xit', 'Quit this program')

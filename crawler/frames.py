@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-from collections import OrderedDict
 import os
 import re
 import webbrowser
@@ -25,8 +24,7 @@ class Main(wx.Frame):
         sizer = wx.BoxSizer(wx.VERTICAL)
         self.panel = wx.Panel(self, wx.ID_ANY)
         self.panel.SetSizer(sizer)
-        self.urls = OrderedDict()
-        self.counter = 0;
+        self.urls = []
         self.crawling = False
         self.CreateStatusBar()
         
@@ -91,8 +89,8 @@ class Main(wx.Frame):
             return
         dialog = wx.FileDialog(self, message='Choose a file', 
                         style=wx.FD_SAVE,
-                            wildcard='Comma Separated (*.csv)|*.csv|'
-                                'JSON (*.json)|*.json|YAML (*.yaml)|*.yaml')
+                        wildcard='Comma Separated (*.csv)|*.csv|'
+                            'JSON (*.json)|*.json|YAML (*.yaml)|*.yaml')
         if dialog.ShowModal() == wx.ID_OK:
             index = dialog.GetFilterIndex()
             self.filetype = ['csv', 'json', 'yaml'][index]
@@ -175,27 +173,27 @@ class Main(wx.Frame):
                 ' for documentation')
     
     def event_url(self, event):
-        self.urls[event.url] = self.counter
+        self.urls.append(event.url)
         self.grid.AppendRows(1)
-        self.grid.SetCellValue(self.counter, 0, event.url)
-        self.counter += 1
+        i = self.get_row(event.url)
+        if i is not None:
+            self.grid.SetCellValue(i, 0, event.url)
     
     def event_data(self, event):
-        row = self.urls.get(event.url)
-        if row is None:
-            return # probably should do something here?
-        for key, value in event.data.items():
-            col = self.grid.get_col_data(key)
-            if col is None:
-                continue
-            if isinstance(value, basestring):
-                value = value.encode('ascii', 'ignore')
-            else:
-                value = str(value)
-            self.grid.SetCellValue(row, col[0], value)
+        row = self.get_row(event.url)
+        if row is not None:
+            for key, value in event.data.items():
+                col = self.grid.get_col_data(key)
+                if col is None:
+                    continue
+                if isinstance(value, basestring):
+                    value = value.encode('ascii', 'ignore')
+                else:
+                    value = str(value)
+                self.grid.SetCellValue(row, col[0], value)
     
     def event_note(self, event):
-        row = self.urls.get(event.url)
+        row = self.get_row(event.url)
         if row is None:
             return
         col = self.grid.get_col_data('notes')
@@ -218,3 +216,9 @@ class Main(wx.Frame):
         while self.dispatcher.is_alive():
             self.dispatcher.join()
         self.crawling = False
+    
+    def get_row(self, url):
+        try:
+            return self.urls.index(url)
+        except:
+            return None

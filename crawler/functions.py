@@ -36,7 +36,7 @@ def fetch_url(url):
         note = 'Something when horribly wrong'
     else:
         if url != resp.url:
-            notes = 'Redirected to: {}'.format(url)
+            notes = 'Redirected to: {}'.format(resp.url)
         if 'text/html' in resp.headers.get('content-type', ''):
             content = resp.content
         headers = resp.headers
@@ -50,14 +50,15 @@ def parse_headers(headers):
     Get the relevant items out of a dict of resp headers.
     """
     out = {
-        'server': headers.get('server', 'unknown'),
+        'server': headers.get('server', '--'),
         'size': headers.get('content-length', '-1'),
+        'x_robots': headers.get('x-robots-tag', '--')
     }
     content_type = headers.get('content-type')
     if content_type is not None:
         out['content_type'] = content_type.split(';', 1)[0]
     else:
-        out['content_type'] = 'unknown'
+        out['content_type'] = '--'
     return out
 
 

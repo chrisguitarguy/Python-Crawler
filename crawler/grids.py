@@ -21,8 +21,9 @@ class URLGrid(wx.grid.Grid):
         ('kw', (7, 'Meta Keywords', 350)),
         ('canonical', (8, 'Rel Canonical', 300)),
         ('h1', (9, 'H1', 300)),
-        ('h2', (10, 'H2', 300)), 
-        ('notes', (11, 'Notes', 300))
+        ('h2', (10, 'H2', 300)),
+        ('x_robots', (11, 'X-Robots-Tag Header', 300)),
+        ('notes', (12, 'Notes', 300))
     ])
     
     def __init__(self, sizer, *args, **kwargs):
