@@ -1,12 +1,15 @@
 # -*- coding: utf-8 -*-
 import argparse
-from Queue import Queue
+import logging
+from Queue import Queue, Empty
 import signal
 import sys
 from threading import Event
 
 from .threads import Fetcher, Parser
 from .queues import URLQueue
+
+logger = logging.getLogger(__name__)
 
 class main(object):
     
@@ -19,6 +22,7 @@ class main(object):
         self.url_queue = URLQueue()
         self.content_queue = Queue()
         self.signal_queue = Queue()
+        self.urls = {}
         
     
     def __call__(self):
@@ -32,6 +36,8 @@ class main(object):
             print ('Usage: {} -s <start_url> '
                         '[-f <number of fetchers>]'.format(sys.argv[0]))
             sys.exit(1)
+        else:
+            self.base_url = args.start_url
         if args.fetchers is not None:
             try:
                 self.num_fetchers = int(args.fetchers)
@@ -40,15 +46,34 @@ class main(object):
         self.connect_signals()
         self.set_fetchers()
         self.set_parser()
+        self.url_queue.add_url(args.start_url)
+        self.urls[args.start_url] = {'note': []}
         self.parser.start()
         for i in range(0, self.num_fetchers):
             getattr(self, 'fetcher{}'.format(i)).start()
         
-        while 1:
+        while not self.killer.is_set():
             try:
-                pass
+                action, val = self.signal_queue.get(True, 600)
+            except Empty:
+                self.killer.set()
+                break
             except KeyboardInterrupt:
-                pass
+                self.catch_cancel()
+            else:
+                self.handle_signal(action, val)
+                self.signal_queue.task_done()
+            
+        while not self.abrupt.is_set():
+            try:
+                action, val = self.signal_queue.get(True, 10)
+            except Empty:
+                self.catch_cancel()
+            except KeyboardInterrupt:
+                self.catch_cancel()
+            else:
+                self.handle_signal(action, val)
+                self.signal_queue.task_done()
     
     def set_fetchers(self):
         for i in xrange(0, self.num_fetchers):
@@ -88,3 +113,26 @@ class main(object):
         self.stop_fetchers()
         self.stop_parsers()
         sys.exit(0)
+    
+    def handle_signal(self, action, val):
+        # todo: using logging, not print
+        if 'add_urls' == action:
+            for url in val:
+                new = self.url_queue.add_url(url)
+                if new:
+                    print '{} added'.format(url)
+                    self.urls[url] = {'note': []}
+        elif 'add_content' == action:
+            self.content_queue.put(val)
+        elif 'url_meta' == action:
+            url, dict_ = val
+            for k, v in dict_.items():
+                self.urls[url][k] = v
+            print '{} meta received'.format(url)
+        elif 'send_note' == action:
+            url, note = val
+            self.urls[url]['note'].append(note)
+            print 'New note for {}'.format(url)
+            
+        else:
+            pass # nothin'

@@ -2,8 +2,8 @@ import logging
 
 import lxml.html as parser
 import requests
-from requests.exceptions import ConnectionError, RequestException, \
-    Timeout, SSLError
+from requests.exceptions import (ConnectionError, RequestException,
+    Timeout, SSLError)
 
 def fetch_url(url):
     """

@@ -4,8 +4,8 @@ from Queue import Empty
 
 import lxml.html as parser
 
-from .functions import fetch_element_att, fetch_element_text, \
-    fetch_links, fetch_url, parse_content, parse_headers
+from .functions import (fetch_element_att, fetch_element_text,
+    fetch_links, fetch_url, parse_content, parse_headers)
 
 class Fetcher(Thread):
     """
